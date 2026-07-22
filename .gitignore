@@ -1,0 +1,14 @@
+# 含 token，不進版控（前端 token 存瀏覽器 localStorage，不落檔）
+test.sh
+
+# 交易明細匯出檔、對帳底稿、回填數值、專案文件（個人財務資料），任何情況不進 public repo
+*.csv
+匯入對帳.md
+gas/*.local.gs
+CLAUDE.md
+CLAUDE.local.md
+投資理財規劃.md
+捷徑OCR.md
+
+.idea/
+.DS_Store

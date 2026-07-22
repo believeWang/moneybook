@@ -1,0 +1,1099 @@
+:root {
+  --bg: #f5f5f4;
+  --card: #ffffff;
+  --text: #1c1917;
+  --muted: #78716c;
+  --faint: #a8a29e;
+  --line: #e7e5e4;
+  --line-soft: #f5f5f4;
+  --accent: #0d9488;
+  --red: #ea580c;
+  --green: #059669;
+  --blue: #2563eb;
+  --danger: #dc2626;
+  --overlay: rgba(28, 25, 23, .45);
+  --shadow: rgba(0, 0, 0, .12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1917;
+    --card: #292524;
+    --text: #e7e5e4;
+    --muted: #a8a29e;
+    --faint: #78716c;
+    --line: #44403c;
+    --line-soft: #37332f;
+    --accent: #2dd4bf;
+    --red: #fb923c;
+    --green: #34d399;
+    --blue: #60a5fa;
+    --danger: #f87171;
+    --overlay: rgba(0, 0, 0, .6);
+    --shadow: rgba(0, 0, 0, .5);
+  }
+}
+
+* { box-sizing: border-box; margin: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
+  font-variant-numeric: tabular-nums;
+  background: var(--bg);
+  color: var(--text);
+  max-width: 480px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 8px) 0 calc(env(safe-area-inset-bottom) + 66px);
+}
+
+button {
+  font-family: inherit;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: transform .1s ease, background-color .15s, opacity .15s;
+}
+
+button:active { transform: scale(.92); }
+
+#view { padding: 0 14px; animation: view-in .18s ease; }
+
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(4px); }
+}
+
+/* 底部導覽 */
+#bottom-nav {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  background: var(--card);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 10;
+}
+
+#bottom-nav button {
+  border: none;
+  background: none;
+  padding: 7px 0 6px;
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+#bottom-nav button span { font-size: 20px; }
+#bottom-nav button.active { color: var(--accent); font-weight: 600; }
+
+/* 類型切換（欄數跟著按鈕數走：帳戶/持倉 2 顆、類型 3 顆都均分） */
+.seg {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  background: var(--line);
+  border-radius: 12px;
+  padding: 3px;
+  margin-bottom: 10px;
+}
+
+.seg button {
+  border: none;
+  background: none;
+  padding: 8px 0;
+  font-size: 15px;
+  border-radius: 10px;
+  color: var(--muted);
+}
+
+.seg button.active {
+  background: var(--card);
+  color: var(--accent);
+  font-weight: 600;
+  box-shadow: 0 1px 3px var(--shadow);
+}
+
+/* 常用快速記帳 chip：橫向捲動一列 */
+.quick-bar {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  margin-bottom: 6px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.quick-bar::-webkit-scrollbar { display: none; }
+
+.quick-chip {
+  flex-shrink: 0;
+  padding: 6px 13px;
+  font-size: 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+
+/* 金額列 */
+.amount-bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  background: var(--card);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+}
+
+.amount-bar .cur { font-size: 14px; color: var(--muted); flex-shrink: 0; }
+
+.amount-right {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+#amount-preview {
+  font-size: 14px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+#amount-display {
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--red);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+/* 日期列 */
+.date-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--line);
+  border-radius: 10px;
+  padding: 4px 6px;
+  margin-bottom: 8px;
+  position: relative;
+}
+
+.date-bar.big { padding: 8px 6px; margin-bottom: 10px; }
+
+.date-bar button {
+  border: none;
+  background: none;
+  font-size: 24px;
+  color: var(--muted);
+  padding: 0 16px;
+}
+
+.date-bar span { font-size: 15px; }
+
+/* 📅 底下疊一個透明的原生 date input，點到的直接是 input，iOS 才會穩定開出選擇器 */
+.cal-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  align-self: stretch;
+  padding: 0 14px;
+  font-size: 19px;
+}
+
+.cal-btn input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* 月曆 */
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal-grid.head { margin-bottom: 6px; }
+
+.cal-grid.head span {
+  text-align: center;
+  font-size: 12px;
+  color: var(--faint);
+}
+
+.cal-grid.head span:first-child { color: var(--danger); }
+.cal-grid.head span:last-child { color: var(--blue); }
+
+.cal-day {
+  border: none;
+  background: var(--card);
+  border-radius: 8px;
+  padding: 4px 1px;
+  min-height: 54px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  color: var(--text);
+}
+
+.cal-day .d { font-size: 13px; }
+
+.cal-day .pos,
+.cal-day .neg {
+  font-size: 10px;
+  min-height: 12px;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.cal-day.today .d { color: var(--accent); font-weight: 700; }
+.cal-day.sel { outline: 2px solid var(--accent); }
+
+/* 表單列 */
+.rows {
+  background: var(--card);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.row-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line-soft);
+  gap: 8px;
+}
+
+.row-item:last-child { border-bottom: none; }
+.row-label { font-size: 15px; color: var(--muted); flex-shrink: 0; }
+
+.row-value {
+  flex: 1;
+  text-align: right;
+  font-size: 15px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-value.dim { color: var(--faint); }
+.row-value.plain { color: var(--text); white-space: normal; }
+.row-value.plain.neg { color: var(--red); }
+.row-value.plain.pos { color: var(--green); }
+.chev { color: var(--faint); font-size: 18px; }
+
+/* 類型主色只上金額與 seg：紅=錢流出的語意留給數字本身，表單其他值維持中性不搶戲 */
+.type-expense #amount-display, .type-expense .seg button.active { color: var(--red); }
+.type-income #amount-display, .type-income .seg button.active { color: var(--green); }
+.type-transfer #amount-display, .type-transfer .seg button.active { color: var(--blue); }
+
+.row-item input {
+  flex: 1;
+  border: none;
+  background: none;
+  font-size: 15px;
+  text-align: right;
+  color: inherit;
+  outline: none;
+}
+
+/* 計算機 */
+#keypad {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 10px; /* 和底部導覽隔開，最後一排按鈕下緣不貼著被切 */
+}
+
+/* 數字鍵中性色：色彩只留給有語意的鍵（OK teal、DEL 紅），藍色保留給「轉帳」 */
+/* 高度壓在 48px 左右：quick chips 多一列後新增頁才塞得回一個螢幕（觸控目標仍 > 44px） */
+#keypad button {
+  border: none;
+  background: var(--card);
+  border-radius: 10px;
+  padding: 11px 0;
+  font-size: 22px;
+  line-height: 1.2;
+  color: var(--text);
+  box-shadow: 0 1px 2px var(--shadow);
+}
+
+#keypad button:active { background: var(--line); transform: scale(.9); }
+#keypad .ok:active { background: var(--accent); filter: brightness(.8); transform: scale(.95); }
+#keypad .fn { color: var(--muted); font-size: 19px; }
+#keypad .del { color: var(--danger); }
+#keypad .zero { grid-column: span 2; }
+
+#keypad .ok {
+  grid-row: span 2;
+  background: var(--accent);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+#keypad .ok:disabled { opacity: .55; }
+
+/* 明細 / 帳戶列表 */
+.day-total {
+  text-align: center;
+  font-size: 15px;
+  margin-bottom: 10px;
+  color: var(--muted);
+}
+
+.day-total.neg { color: var(--red); }
+.day-total.pos { color: var(--green); }
+
+.record-list {
+  background: var(--card);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.record {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--line-soft);
+  transition: background-color .15s;
+}
+
+.record:active,
+.row-item[data-action]:active { background: var(--line-soft); }
+
+.row-item[data-action] {
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color .15s;
+}
+
+.record:last-child { border-bottom: none; }
+
+.rec-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.rec-cat { font-size: 15px; display: flex; align-items: center; gap: 4px; }
+.rec-amount { font-size: 17px; font-weight: 600; }
+.neg { color: var(--red); }
+.pos { color: var(--green); }
+
+.rec-sub {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--faint);
+  margin-top: 2px;
+  gap: 8px;
+}
+
+.loading {
+  text-align: center;
+  color: var(--faint);
+  padding: 28px 0;
+  font-size: 14px;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--faint);
+  padding: 12px 4px;
+  line-height: 1.5;
+}
+
+/* 總覽卡 */
+.totals {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 6px 16px;
+  margin-bottom: 10px;
+}
+
+.totals div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.totals div:last-child { border-bottom: none; }
+.totals span { font-size: 15px; color: var(--muted); }
+.totals b { font-size: 18px; }
+
+/* Spinner */
+.spinner {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border: 3px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  vertical-align: middle;
+}
+
+.spinner.sm { width: 16px; height: 16px; border-width: 2px; }
+.spinner.light { border-color: rgba(255,255,255,.35); border-top-color: #fff; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 編輯模式 */
+.edit-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 10px;
+  padding: 7px 12px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.edit-banner button {
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* 帳戶明細 */
+.bar-spacer { width: 56px; }
+
+.day-head {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 8px 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.runbal {
+  color: var(--faint);
+  font-weight: 400;
+  font-size: 12px;
+  margin-left: 5px;
+}
+
+.fab {
+  position: fixed;
+  right: calc(50% - 240px + 18px);
+  bottom: calc(env(safe-area-inset-bottom) + 78px);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 22px;
+  box-shadow: 0 4px 12px var(--shadow);
+  z-index: 15;
+}
+
+@media (max-width: 480px) {
+  .fab { right: 18px; }
+}
+
+.fab-spacer { height: 76px; }
+
+.sheet-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.sheet-actions button {
+  flex: 1;
+  padding: 12px 0;
+  font-size: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+}
+
+.sheet-actions .danger { color: var(--danger); }
+
+.sheet-actions .danger.armed {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+  font-weight: 600;
+}
+
+.empty-add {
+  display: block;
+  margin: 0 auto 24px;
+  padding: 9px 22px;
+  font-size: 14px;
+  border: 1px dashed var(--faint);
+  border-radius: 999px;
+  background: none;
+  color: var(--accent);
+}
+
+/* 統計 */
+.stats-tags { margin-bottom: 10px; }
+
+/* 排除中的分類：紅框醒目提示，點一下復原 */
+.stats-excluded { margin-bottom: 10px; }
+.stats-excluded button {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.cat-row .rec-cat { flex: 1; }
+
+.ex-btn {
+  border: none;
+  background: none;
+  color: var(--faint);
+  font-size: 18px;
+  line-height: 1;
+  padding: 6px 2px 6px 10px;
+}
+
+.div-btn {
+  border: none;
+  background: none;
+  font-size: 19px;
+  line-height: 1;
+  padding: 10px 4px 10px 14px;
+}
+
+/* 管理帳戶：隱藏的列淡化、右側顯示/隱藏切換做成 pill */
+.acct-manage-row.off .rec-cat { opacity: .45; }
+.acct-toggle {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted);
+  font-size: 13px;
+  padding: 5px 12px;
+  flex-shrink: 0;
+}
+.acct-toggle[data-show="1"] { color: var(--accent); border-color: var(--accent); }
+
+/* 持倉列：名稱撐滿左側（股數才會固定靠右，不隨名稱長短跳動）、代號主/名稱次、市值小字在股數下 */
+.hold-row .rec-cat {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.hold-row .rec-cat small {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+  margin-left: 6px;
+}
+
+.hold-nums {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.hold-nums .rec-amount { font-size: 16px; }
+
+.hold-val {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.chart-select {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.chart-select select {
+  width: 100%;
+  padding: 11px 14px;
+  font-size: 15px;
+  font-family: inherit;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
+
+.chart-select::after {
+  content: '▾';
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+/* 總覽模式的圖表區段標題 */
+.sec-title {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 14px 8px 6px;
+}
+
+.bar-chart {
+  display: flex;
+  gap: 5px;
+  height: 200px;
+  background: var(--card);
+  border-radius: 12px;
+  padding: 12px 10px 8px;
+  margin-bottom: 10px;
+}
+
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.bar-area {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 2px;
+}
+
+.bar {
+  width: 70%;
+  max-width: 20px;
+  background: var(--accent);
+  border-radius: 3px 3px 0 0;
+}
+
+.bar-val {
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.bar-label {
+  font-size: 10px;
+  color: var(--faint);
+  margin-top: 3px;
+}
+
+.line-chart {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 10px 6px 4px;
+  margin-bottom: 10px;
+}
+
+.line-chart svg { display: block; width: 100%; }
+.chart-ax { fill: var(--faint); font-size: 10px; }
+.chart-val { fill: var(--muted); font-size: 10px; font-weight: 600; }
+
+.donut {
+  width: 172px;
+  height: 172px;
+  border-radius: 50%;
+  margin: 4px auto 14px;
+  position: relative;
+}
+
+.donut::after {
+  content: '';
+  position: absolute;
+  inset: 21%;
+  background: var(--bg);
+  border-radius: 50%;
+}
+
+.donut span {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  z-index: 1;
+}
+
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 3px;
+  flex-shrink: 0;
+}
+
+.pct {
+  color: var(--faint);
+  font-weight: 400;
+  font-size: 12px;
+  margin-left: 6px;
+}
+
+.sub-breakdown {
+  margin-top: 8px;
+  padding: 4px 0 2px 20px;
+  border-top: 1px dashed var(--line);
+}
+
+.sub-breakdown div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13.5px;
+  color: var(--muted);
+  padding: 4px 0;
+}
+
+/* 彈出選單 */
+#sheet {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+}
+
+#sheet.hidden { display: none; }
+
+/* display:none → flex 時動畫會重播，所以只有開啟時滑入；sheet 內換頁（分類→子分類）不會重播 */
+#sheet { animation: overlay-in .2s ease; }
+
+@keyframes overlay-in {
+  from { opacity: 0; }
+}
+
+.sheet-card {
+  background: var(--bg);
+  border-radius: 16px 16px 0 0;
+  padding: 18px 16px calc(env(safe-area-inset-bottom) + 18px);
+  width: 100%;
+  max-height: 75vh;
+  overflow-y: auto;
+  animation: sheet-up .28s cubic-bezier(.2, .9, .3, 1);
+}
+
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+}
+
+.sheet-card h3 {
+  font-size: 15px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.grid button {
+  padding: 9px 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+}
+
+.grid button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.cat-picked {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.cat-picked .swap {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.chips button {
+  padding: 8px 15px;
+  font-size: 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+}
+
+.chips button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.chips input {
+  width: 100px;
+  padding: 8px 13px;
+  font-size: 14px;
+  border: 1px dashed var(--faint);
+  border-radius: 999px;
+  background: none;
+  color: inherit;
+  outline: none;
+}
+
+.account-list { display: flex; flex-direction: column; gap: 7px; }
+
+.account-list button {
+  padding: 13px;
+  font-size: 15px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  text-align: left;
+}
+
+.sheet-done {
+  width: 100%;
+  margin-top: 16px;
+  padding: 13px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+}
+
+/* 寫入中全頁遮罩 */
+#busy {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#busy.hidden { display: none; }
+
+.busy-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--card);
+  border-radius: 14px;
+  padding: 16px 22px;
+  font-size: 15px;
+  color: var(--muted);
+  box-shadow: 0 8px 24px var(--shadow);
+}
+
+/* Toast */
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 140px); /* 高於 FAB（78+52px），刪除後的 toast 不壓在 ✏️ 上 */
+  transform: translateX(-50%);
+  background: var(--text);
+  color: var(--bg);
+  padding: 11px 20px;
+  border-radius: 999px;
+  font-size: 15px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s;
+  white-space: nowrap;
+  z-index: 30;
+}
+
+#toast.show { opacity: 1; }
+#toast.error { background: #b91c1c; color: #fff; }
+
+/* Token 畫面 */
+#token-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 40;
+}
+
+#token-screen.hidden { display: none; }
+
+#token-screen .card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 22px;
+  width: 100%;
+  max-width: 360px;
+}
+
+#token-screen h2 { font-size: 17px; margin-bottom: 8px; }
+
+#token-screen p {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+#token-screen input {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  color: inherit;
+  margin-bottom: 12px;
+}
+
+#token-screen button {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+#token-screen button.secondary {
+  background: var(--line);
+  color: var(--text);
+  font-weight: 400;
+}
+
+/* 搜尋 sheet 撐滿固定高度：輸入框固定在畫面上緣附近，iOS 鍵盤彈出不會蓋到 */
+.sheet-card.tall {
+  height: 80vh;
+  max-height: 80vh;
+}
+
+/* 功能說明 */
+.help h4 {
+  font-size: 14px;
+  margin: 16px 0 6px;
+}
+
+.help h4:first-child { margin-top: 4px; }
+
+.help ul {
+  padding-left: 18px;
+  margin: 0;
+}
+
+.help li {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+
+.help li b { color: var(--text); font-weight: 600; }
+
+/* 搜尋 */
+#search-input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+/* 明細列 4 顆按鈕，🔍📅 縮窄一點才擠得下小螢幕 */
+#list-search, #list-cal { padding: 0 8px; }
+
+/* 新增頁 📋 剪貼簿帶入：縮到跟 📅 同大小才擠得進日期列 */
+#paste-import { padding: 0 8px; font-size: 19px; }
+
+/* 長條圖負值（結餘/支出趨勢）：紅色長條與數字 */
+.bar.negbar { background: var(--red); }
+.bar-val.neg { color: var(--red); }
+
+/* ---------- 2026-07-11 design review ---------- */
+
+/* 金額 = 主角：所有金錢數字用 iOS 系統圓體（SF Rounded，零下載），
+   一眼識別「這是錢」；非 iOS 環境 fallback 回系統字，無害 */
+#amount-display, #amount-preview, .rec-amount, .totals b, .donut span,
+.day-total, .runbal, .bar-val, .chart-val, .hold-val {
+  font-family: ui-rounded, -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
+}
+
+/* 底部導覽：未選中的 tab emoji 轉灰，當前分頁一眼跳出（⚙️ 是動作非分頁，恆灰合理） */
+#bottom-nav button:not(.active) span { filter: grayscale(1); opacity: .55; }
+
+/* 鍵盤操作的 focus 可見性（觸控點按不會觸發 :focus-visible，不影響日常） */
+input:focus-visible, select:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<!-- maximum-scale=1 擋 iOS 聚焦 <16px input 的自動放大（iOS 10+ 捏合縮放不受它影響） -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>記帳</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<!-- iOS 15+ 的 PWA 狀態列吃 theme-color，與 --bg 同色才無縫 -->
+<meta name="theme-color" content="#f5f5f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1c1917" media="(prefers-color-scheme: dark)">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="view"></main>
+
+<nav id="bottom-nav">
+  <button data-view="accounts"><span>🏦</span>帳戶</button>
+  <button data-view="list" class="active"><span>📋</span>明細</button>
+  <button data-view="add"><span>✏️</span>新增</button>
+  <button data-view="stats"><span>📊</span>統計</button>
+  <button id="gear"><span>⚙️</span>設定</button>
+</nav>
+
+<div id="toast"></div>
+
+<div id="busy" class="hidden"><div class="busy-card"><i class="spinner"></i><span></span></div></div>
+
+<div id="sheet" class="hidden">
+  <div class="sheet-card" id="sheet-content"></div>
+</div>
+
+<div id="token-screen" class="hidden">
+  <div class="card">
+    <h2>連線設定</h2>
+    <p>輸入 GAS 後端的 token（只存在這台裝置的瀏覽器裡）</p>
+    <input id="token-input" type="password" autocomplete="off" placeholder="token">
+    <button id="token-save">儲存</button>
+    <button id="config-reload" class="secondary">重新整理資料（重抓設定與所有快取）</button>
+    <button id="accounts-manage" class="secondary">🏦 管理帳戶</button>
+    <button id="help-open" class="secondary">📖 功能說明</button>
+    <button id="mask-toggle" class="secondary">🙈 遮蔽金額（demo 用）</button>
+    <button id="token-cancel" class="secondary">關閉</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
