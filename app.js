@@ -1549,7 +1549,7 @@ function allocHTML(balances, shares) {
 
   return `
     <div class="totals">
-      <div><span>資產總額（市值）</span><b>${fmtMoney(total)}</b></div>
+      <div><span>資產總額（市值）</span><b class="pos">${fmtMoney(total)}</b></div>
     </div>
     <div class="donut" style="background:conic-gradient(${segments.join(',')})"><span>${fmtShort(total)}</span></div>
     <div class="record-list">${rows.map(([name, g], i) => `
@@ -1631,15 +1631,15 @@ async function renderAccounts() {
 
     $('#acc-body').innerHTML = `
       <div class="totals">
-        <div><span>總資產</span><b>${fmtMoney(assets)}</b></div>
-        <div><span>總負債</span><b>${fmtMoney(debts)}</b></div>
+        <div><span>總資產</span><b class="pos">${fmtMoney(assets)}</b></div>
+        <div><span>總負債</span><b class="neg">${fmtMoney(debts)}</b></div>
         <div><span>結餘</span><b>${fmtMoney(assets + debts)}</b></div>
       </div>
       <div class="record-list">${listed.map(b => `
         <div class="record acc-row" data-name="${esc(b.name)}">
           <div class="rec-main">
             <span class="rec-cat">${withEmoji(b.name, 'account')}${b.currency !== 'TWD' ? `（${b.currency}）` : ''}</span>
-            <span class="rec-amount">${fmtMoney(b.balance)}<span class="chev">›</span></span>
+            <span class="rec-amount ${b.balance < 0 ? 'neg' : 'pos'}">${fmtMoney(b.balance)}<span class="chev">›</span></span>
           </div>
         </div>`).join('')}
       </div>
@@ -1760,7 +1760,7 @@ async function fillHoldings() {
   const totalVal = holdings.reduce((s, h, i) => s + (holdingValue(h, shares[i]) || 0), 0);
   box.innerHTML = `
     ${totalVal ? `<div class="totals">
-      <div><span>持倉市值</span><b>${fmtMoney(totalVal)}</b></div>
+      <div><span>持倉市值</span><b class="pos">${fmtMoney(totalVal)}</b></div>
     </div>` : ''}
     <div class="record-list">${holdings.map((h, i) => {
       const sub = [h.bucket, dup(h.ticker) ? h.account : ''].filter(Boolean).join('・');
@@ -1939,9 +1939,9 @@ async function renderAccountDetail() {
     $('#accd-body').innerHTML = `
       <div class="totals">
         ${isBill
-          ? `<div><span>結帳餘額</span><b>${fmtMoney(endBal)}</b></div>
+          ? `<div><span>結帳餘額</span><b class="${endBal < 0 ? 'neg' : 'pos'}">${fmtMoney(endBal)}</b></div>
              <div><span>繳費日</span><b>${fmtMD(payDate)}</b></div>`
-          : `<div><span>目前餘額</span><b>${fmtMoney(acct.balance)}</b></div>
+          : `<div><span>目前餘額</span><b class="${acct.balance < 0 ? 'neg' : 'pos'}">${fmtMoney(acct.balance)}</b></div>
              <div><span>累計至上期</span><b>${fmtMoney(prevBal)}</b></div>`}
         <div><span>期間收入</span><b class="pos">${fmtMoney(inflow)}</b></div>
         <div><span>期間支出</span><b class="neg">${fmtMoney(outflow)}</b></div>
