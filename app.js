@@ -41,7 +41,7 @@ const state = {
     chart: 'expense',
     tag: null,
     expanded: null,
-    excluded: new Set(),   // '類型|分類'，session 內有效；作用於圓環/收支/月均（趨勢圖不套，避免看不見的過濾）
+    excluded: new Set(),   // '類型|分類'，session 內有效；作用於圓環/收支/月均/總覽支出趨勢（其餘趨勢圖不套，避免看不見的過濾）
   },
 };
 
@@ -1177,10 +1177,16 @@ async function renderStats() {
         <div class="sec-title">資產趨勢（全期間）</div>
         ${assetAllHTML(records, balances)}
         <div class="sec-title">支出趨勢（全期間）</div>
+        ${excludedChipsHTML(st)}
         ${expenseAllHTML(records)}`;
       $('#stats-body').querySelectorAll('.cat-row').forEach(el =>
         el.addEventListener('click', () => {
           st.expanded = st.expanded === el.dataset.cat ? null : el.dataset.cat;
+          renderStats();
+        }));
+      $('#stats-body').querySelectorAll('.stats-excluded button').forEach(b =>
+        b.addEventListener('click', () => {
+          st.excluded.delete(b.dataset.restore);
           renderStats();
         }));
       return;
@@ -1213,6 +1219,16 @@ async function renderStats() {
   } catch (err) {
     if (!handleAuthError(err)) $('#stats-body').innerHTML = `<p class="loading">載入失敗：${err.message}</p>`;
   }
+}
+
+// 已排除分類的提示 chips（點 ✕ 復原），圓環頁與總覽支出趨勢共用
+function excludedChipsHTML(st) {
+  return st.excluded.size
+    ? `<div class="chips stats-excluded">${[...st.excluded].map(k => {
+        const [t, c] = k.split('|');
+        return `<button data-restore="${esc(k)}">⊘ ${emojiFor(c)} ${esc(c)}（${t}）✕</button>`;
+      }).join('')}</div>`
+    : '';
 }
 
 function renderPieStats(all) {
@@ -1267,12 +1283,7 @@ function renderPieStats(all) {
       </div>${st.tag ? '<p class="hint" id="tag-alltime"></p>' : ''}`
     : '';
 
-  const excludedBar = st.excluded.size
-    ? `<div class="chips stats-excluded">${[...st.excluded].map(k => {
-        const [t, c] = k.split('|');
-        return `<button data-restore="${esc(k)}">⊘ ${emojiFor(c)} ${esc(c)}（${t}）✕</button>`;
-      }).join('')}</div>`
-    : '';
+  const excludedBar = excludedChipsHTML(st);
 
   // 年模式的月均支出：過去年度 ÷12；今年分子分母都只取已完整結束的月份（吃排除/標籤過濾後的數字）
   let avgRow = '';
@@ -1488,7 +1499,11 @@ function assetAllHTML(records, balances) {
 }
 
 // 全期間支出趨勢：每年一根長條（逐月上百根擠不下）。2012-01-01 期初/校正 sentinel 不計
+// 吃分類排除（st.excluded，與圓環頁共用同一份 session 過濾）——只套用在這張，資產趨勢不套用
+// （資產趨勢是拿目前結餘往回推算歷史，排除掉的支出其實真的花掉了，回推會失真）
 function expenseAllHTML(records) {
+  const st = state.stats;
+  if (st.excluded.size) records = records.filter(r => !st.excluded.has(`${r.type}|${r.category}`));
   const sums = {};
   records.forEach(r => {
     if (r.type !== '支出' || r.date === '2012-01-01') return;
