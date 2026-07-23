@@ -1111,9 +1111,13 @@ async function renderStats() {
       <button id="stats-next">›</button>
     </div>`;
   } else if (st.mode === 'year') {
+    const nowY = Number(today().slice(0, 4));
+    const years = [];
+    for (let y = nowY; y >= 2012; y--) years.push(y);
     periodBar = `<div class="date-bar big">
       <button id="stats-prev">‹</button>
-      <span id="stats-label" title="點一下回到今年">${st.year} 年</span>
+      <select id="stats-year-select" title="快速切換年份">${years.map(y =>
+        `<option value="${y}" ${y === st.year ? 'selected' : ''}>${y} 年</option>`).join('')}</select>
       <button id="stats-next">›</button>
     </div>`;
   }
@@ -1155,9 +1159,15 @@ async function renderStats() {
       st.expanded = null;
       renderStats();
     });
-    $('#stats-label').addEventListener('click', () => {
-      if (st.mode === 'month') st.month = today().slice(0, 7);
-      else st.year = Number(today().slice(0, 4));
+    const label = $('#stats-label');
+    if (label) label.addEventListener('click', () => {
+      st.month = today().slice(0, 7);
+      st.expanded = null;
+      renderStats();
+    });
+    const yearSelect = $('#stats-year-select');
+    if (yearSelect) yearSelect.addEventListener('change', () => {
+      st.year = Number(yearSelect.value);
       st.expanded = null;
       renderStats();
     });

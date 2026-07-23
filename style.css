@@ -206,6 +206,19 @@ button:active { transform: scale(.92); }
 
 .date-bar span { font-size: 15px; }
 
+.date-bar select {
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--text);
+  background: none;
+  border: none;
+  text-align: center;
+  text-align-last: center;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
+
 /* 📅 底下疊一個透明的原生 date input，點到的直接是 input，iOS 才會穩定開出選擇器 */
 .cal-btn {
   position: relative;
