@@ -1108,6 +1108,7 @@ async function renderStats() {
     periodBar = `<div class="date-bar big">
       <button id="stats-prev">‹</button>
       <span id="stats-label" title="點一下回到本月">${st.month.replace('-', ' 年 ')} 月</span>
+      <span class="cal-btn">📅<input type="month" id="stats-month-input" value="${st.month}"></span>
       <button id="stats-next">›</button>
     </div>`;
   } else if (st.mode === 'year') {
@@ -1165,6 +1166,16 @@ async function renderStats() {
       st.expanded = null;
       renderStats();
     });
+    const monthInput = $('#stats-month-input');
+    if (monthInput) {
+      monthInput.addEventListener('click', e => { try { e.target.showPicker && e.target.showPicker(); } catch (_) {} });
+      monthInput.addEventListener('change', e => {
+        if (!e.target.value) return;
+        st.month = e.target.value;
+        st.expanded = null;
+        renderStats();
+      });
+    }
     const yearSelect = $('#stats-year-select');
     if (yearSelect) yearSelect.addEventListener('change', () => {
       st.year = Number(yearSelect.value);
