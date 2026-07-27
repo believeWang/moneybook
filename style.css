@@ -403,16 +403,28 @@ button:active { transform: scale(.92); }
   transition: background-color .15s;
 }
 
-.swap-row { justify-content: center; padding: 6px 16px; }
-.swap-row button {
-  border: none;
-  background: var(--line-soft);
-  color: var(--muted);
-  font-size: 13px;
-  padding: 4px 12px;
+.transfer-pair { position: relative; }
+/* 兩列包在定位容器內，轉入列的 border-bottom 被 :last-child 清掉，補回來維持分隔線 */
+.transfer-pair .row-item:last-child { border-bottom: 1px solid var(--line-soft); }
+.swap-fab {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 3px solid var(--card);
   border-radius: 999px;
+  background: var(--line-soft);
+  color: var(--text);
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
 }
-.swap-row button:active { background: var(--line); }
+.swap-fab:active { background: var(--line); }
 
 .record:last-child { border-bottom: none; }
 

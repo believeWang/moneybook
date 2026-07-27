@@ -608,9 +608,11 @@ function renderAdd() {
 
   const crossCurrency = isTransfer && state.from && state.to && currencyOf(state.from) !== currencyOf(state.to);
   if (isTransfer) {
-    rows.push(row('轉出', state.from ? withEmoji(state.from, 'account') : '選擇帳戶', 'pick-from', !state.from));
-    rows.push(`<div class="row-item swap-row"><button id="swap-accounts" title="對調轉出/轉入">⇄ 對調</button></div>`);
-    rows.push(row('轉入', state.to ? withEmoji(state.to, 'account') : '選擇帳戶', 'pick-to', !state.to));
+    rows.push(`<div class="transfer-pair">
+      ${row('轉出', state.from ? withEmoji(state.from, 'account') : '選擇帳戶', 'pick-from', !state.from)}
+      ${row('轉入', state.to ? withEmoji(state.to, 'account') : '選擇帳戶', 'pick-to', !state.to)}
+      <button id="swap-accounts" class="swap-fab" title="對調轉出/轉入">⇄</button>
+    </div>`);
     if (crossCurrency) {
       rows.push(`<div class="row-item"><span class="row-label">入帳金額</span>
         <input id="to-amount" inputmode="decimal" placeholder="${toAmountHint()}" value="${esc(state.toAmount)}">
