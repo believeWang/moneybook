@@ -609,6 +609,7 @@ function renderAdd() {
   const crossCurrency = isTransfer && state.from && state.to && currencyOf(state.from) !== currencyOf(state.to);
   if (isTransfer) {
     rows.push(row('轉出', state.from ? withEmoji(state.from, 'account') : '選擇帳戶', 'pick-from', !state.from));
+    rows.push(`<div class="row-item swap-row"><button id="swap-accounts" title="對調轉出/轉入">⇄ 對調</button></div>`);
     rows.push(row('轉入', state.to ? withEmoji(state.to, 'account') : '選擇帳戶', 'pick-to', !state.to));
     if (crossCurrency) {
       rows.push(`<div class="row-item"><span class="row-label">入帳金額</span>
@@ -682,9 +683,14 @@ function renderAdd() {
       state.type = b.dataset.type;
       restoreEntryDefaults(state.type);
       if (state.type === '轉帳') {
-        const vis = visibleAccounts();
-        state.from = state.from || (vis[0] ? vis[0].name : '');
-        state.to = state.to || (vis[1] ? vis[1].name : '');
+        if (state.lockedAccount) {
+          state.from = state.lockedAccount;
+          state.to = state.lockedAccount;
+        } else {
+          const vis = visibleAccounts();
+          state.from = state.from || (vis[0] ? vis[0].name : '');
+          state.to = state.to || (vis[1] ? vis[1].name : '');
+        }
       }
       saveEntryDefaults();
       renderAdd();
@@ -719,6 +725,13 @@ function renderAdd() {
   };
   $('#view').querySelectorAll('[data-action]').forEach(el =>
     el.addEventListener('click', () => actions[el.dataset.action]()));
+
+  const swapBtn = $('#swap-accounts');
+  if (swapBtn) swapBtn.addEventListener('click', () => {
+    [state.from, state.to] = [state.to, state.from];
+    saveEntryDefaults();
+    renderAdd();
+  });
 
   $('#view').querySelectorAll('.quick-chip').forEach(b =>
     b.addEventListener('click', () => fillQuick(quickItems[Number(b.dataset.qi)])));
@@ -1925,7 +1938,7 @@ async function renderAccountDetail() {
   $('#acc-add').addEventListener('click', () => {
     resetEntry();
     state.lockedAccount = av.name;
-    if (state.type === '轉帳') state.from = av.name;
+    if (state.type === '轉帳') { state.from = av.name; state.to = av.name; }
     else state.account = av.name;
     state.view = 'add';
     render();

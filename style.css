@@ -403,6 +403,17 @@ button:active { transform: scale(.92); }
   transition: background-color .15s;
 }
 
+.swap-row { justify-content: center; padding: 6px 16px; }
+.swap-row button {
+  border: none;
+  background: var(--line-soft);
+  color: var(--muted);
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+.swap-row button:active { background: var(--line); }
+
 .record:last-child { border-bottom: none; }
 
 .rec-main {
