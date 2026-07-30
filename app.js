@@ -381,12 +381,15 @@ function hideBusy() {
 }
 
 let toastTimer;
-function toast(msg, isError) {
+// onClick 有值時 toast 可點（.clickable 開 pointer-events）、逾時拉長；每次呼叫都重設
+// onclick/class，逾時也把它們收回，避免留下「隱形卻擋觸控」的 toast（#toast 平時 pointer-events:none）
+function toast(msg, isError, onClick) {
   const el = $('#toast');
   el.textContent = msg;
-  el.className = 'show' + (isError ? ' error' : '');
+  el.className = 'show' + (isError ? ' error' : '') + (onClick ? ' clickable' : '');
+  el.onclick = onClick || null;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => (el.className = ''), 2200);
+  toastTimer = setTimeout(() => { el.className = ''; el.onclick = null; }, onClick ? 5000 : 2200);
 }
 
 // ---------- API ----------
@@ -416,10 +419,56 @@ function handleAuthError(err) {
   return false;
 }
 
+// 回傳「是否主動跳了週期提示 toast」，供 ⚙️ reload 判斷要不要再蓋「已重新整理」。
+// recurringNotice 只認這裡的網路回應，故意不從 mb_config 快取 render 路徑觸發（避免舊 notice 誤報）
 async function fetchConfig() {
   const data = await apiGet({});
   config = data;
   localStorage.setItem('mb_config', JSON.stringify(data));
+  return maybeShowRecurringNotice(data.recurringNotice);
+}
+
+// 週期記帳自動補了新記錄時提示一次。mb_recur_seen 只管去重（不重複主動 toast）；
+// 明細改由持久入口回看（mb_recur_last + ⚙️ 設定卡那列），錯過 toast 不等於永久看不到
+function maybeShowRecurringNotice(notice) {
+  if (!notice || !notice.items || !notice.items.length) return false;
+  localStorage.setItem('mb_recur_last', JSON.stringify(notice)); // 一律更新供回看
+  if (localStorage.getItem('mb_recur_seen') === String(notice.ts)) return false;
+  localStorage.setItem('mb_recur_seen', String(notice.ts));
+  toast(`🔁 週期自動記帳 ${notice.items.length} 筆（點看明細）`, false, openRecurNoticeSheet);
+  return true;
+}
+
+// 週期自動記帳明細（toast 點開 / ⚙️ 設定卡回看）：每筆一行清單，純顯示
+function openRecurNoticeSheet() {
+  const raw = localStorage.getItem('mb_recur_last');
+  if (!raw) return;
+  let notice;
+  try { notice = JSON.parse(raw); } catch (e) { return; }
+  if (!notice || !notice.items || !notice.items.length) return;
+  $('#toast').className = ''; $('#toast').onclick = null; // 開 sheet 前收掉 toast，免得攔觸控
+
+  const rows = notice.items.map(it => {
+    const isExpense = it.type === '支出';
+    const isTransfer = it.type === '轉帳';
+    const catText = isTransfer
+      ? '🔄 轉帳'
+      : `${emojiFor(it.cat)} ${esc(it.cat)}${it.sub ? ` - ${subEmojiFor(it.cat, it.sub)} ${esc(it.sub)}` : ''}`;
+    const amountText = `${it.currency !== 'TWD' ? it.currency + ' ' : ''}${fmtMoney(isExpense ? -it.amount : it.amount)}`;
+    const accountText = esc(isTransfer ? `${it.from} → ${it.to}` : (it.from || it.to));
+    return `<div class="record">
+      <div class="rec-main">
+        <span class="rec-cat">${catText}</span>
+        <span class="rec-amount ${isExpense ? 'neg' : isTransfer ? '' : 'pos'}">${amountText}</span>
+      </div>
+      <div class="rec-sub"><span>${dateLabel(it.date)}</span><span>${accountText}</span></div>
+    </div>`;
+  }).join('');
+
+  openSheet(`
+    <h3>🔁 週期自動記帳</h3>
+    <p class="hint">這些是週期規則自動生成的記錄，已在明細中</p>
+    <div>${rows}</div>`);
 }
 
 // 已有整月快取（開過月曆/統計）就直接取子集，翻日不逐日打 API
@@ -2250,6 +2299,7 @@ function openHelpSheet() {
       <h4>🔁 週期記帳</h4>
       <ul>
         <li>Sheet「週期」分頁編輯規則（每月/每週/每年），每天凌晨自動生成到期的記錄——只生成到期的，未來的不會預先入帳；隔天開 app 背景自動更新</li>
+        <li><b>自動記帳提示</b>：有新自動生成的記錄時，開 app 會跳「🔁 週期自動記帳 N 筆」提示，點一下看補了哪幾筆；錯過了也能到 ⚙️ 設定的「上次自動記帳」回看</li>
       </ul>
       <h4>🔍 查詢與統計</h4>
       <ul>
@@ -2353,7 +2403,17 @@ async function toggleAccountShow(name, cur) {
 function showTokenScreen() {
   $('#token-input').value = '';
   syncMaskBtn();
+  syncRecurBtn();
   $('#token-screen').classList.remove('hidden');
+}
+
+// 有 mb_recur_last 才顯示「上次自動記帳 N 筆」回看入口
+function syncRecurBtn() {
+  const btn = $('#recur-open');
+  let n = 0;
+  try { n = (JSON.parse(localStorage.getItem('mb_recur_last') || '{}').items || []).length; } catch (e) {}
+  btn.classList.toggle('hidden', n === 0);
+  if (n) btn.textContent = `🔁 上次自動記帳 ${n} 筆`;
 }
 
 function syncMaskBtn() {
@@ -2438,6 +2498,11 @@ $('#help-open').addEventListener('click', () => {
   $('#token-screen').classList.add('hidden');
   openHelpSheet();
 });
+$('#recur-open').addEventListener('click', () => {
+  if (!token()) return;
+  $('#token-screen').classList.add('hidden');
+  openRecurNoticeSheet();
+});
 $('#accounts-manage').addEventListener('click', () => {
   if (!token()) return;
   $('#token-screen').classList.add('hidden');
@@ -2447,10 +2512,10 @@ $('#config-reload').addEventListener('click', async () => {
   if (!token()) return;
   $('#token-screen').classList.add('hidden');
   try {
-    await fetchConfig();
+    const shownNotice = await fetchConfig();
     clearAllCaches();
     render();
-    toast('已重新整理');
+    if (!shownNotice) toast('已重新整理'); // 別蓋掉剛跳的週期提示
     warmCurrentYear();
   } catch (err) {
     if (!handleAuthError(err)) toast(`更新失敗：${err.message}`, true);

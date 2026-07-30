@@ -115,6 +115,7 @@ function processRecurring() {
   const todayStr = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
   const rows = sh.getRange(2, 1, sh.getLastRow() - 1, RECUR_HEADERS.length).getValues();
   let seq = 0;
+  const generated = []; // 本次生成的摘要，供 app「開啟提示補了什麼」用（見 doGet 的 recurringNotice）
 
   rows.forEach((row, i) => {
     const enabled = row[0], freq = String(row[1]), spec = String(row[2]);
@@ -145,11 +146,20 @@ function processRecurring() {
         appendRecord(rec, [ds, type, cat || '', sub || '', amount, currency || 'TWD', from || '', to || '',
           tags || '', note || '',
           Utilities.formatDate(new Date(Date.now() + seq * 1000), TZ, 'yyyy-MM-dd HH:mm:ss'), '']);
+        generated.push({ date: ds, type, cat: cat || '', sub: sub || '', amount,
+          currency: currency || 'TWD', from: from || '', to: to || '' });
       }
       d.setDate(d.getDate() + 1);
     }
     sh.getRange(i + 2, 13).setValue(todayStr);
   });
+
+  // 有生成才更新屬性（沒生成的 run 維持上一份，前端靠 seen 去重不會重報）。
+  // 這是「永久最後一份」：清 localStorage / 換裝置首開會把上一份當新的跳一次，屬正常
+  if (generated.length) {
+    const notice = { ts: String(Date.now()), items: generated.slice(-100) };
+    PropertiesService.getScriptProperties().setProperty('LAST_RECURRING', JSON.stringify(notice));
+  }
 }
 
 function recurDue(freq, spec, d) {
@@ -353,7 +363,14 @@ function getConfig() {
     .filter(r => r[0] !== '')
     .map(r => ({ name: String(r[0]).trim(), rate: fmtD(r[1]), cap: fmtD(r[2]), until: fmtD(r[3]), note: fmtD(r[4]) }));
   return { accounts, categories, tags, rates, emoji: readMap(15), subEmoji: readMap(18), quick, cards,
-    holdings: getHoldings(), savings };
+    holdings: getHoldings(), savings, recurringNotice: getRecurringNotice() };
+}
+
+// 週期記帳上次自動生成的摘要（processRecurring 寫入）。app 開啟時比對 ts 決定要不要提示
+function getRecurringNotice() {
+  const raw = PropertiesService.getScriptProperties().getProperty('LAST_RECURRING');
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch (e) { return null; }
 }
 
 // 「持倉」分頁：股票/ETF 追蹤清單。app 端的現有股數 = 基準股數 +

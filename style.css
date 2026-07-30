@@ -1020,6 +1020,7 @@ button:active { transform: scale(.92); }
 
 #toast.show { opacity: 1; }
 #toast.error { background: #b91c1c; color: #fff; }
+#toast.clickable { pointer-events: auto; cursor: pointer; } /* 可點 toast（週期提示點開明細）；逾時會移除此 class */
 
 /* Token 畫面 */
 #token-screen {
