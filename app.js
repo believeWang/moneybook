@@ -2,8 +2,10 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbxE-zBMDGpxztaqZA0C94fo
 const TYPES = ['支出', '收入', '轉帳'];
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 
-const PALETTE = ['#0d9488', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899',
-  '#10b981', '#f97316', '#06b6d4', '#84cc16', '#a855f7', '#64748b', '#eab308'];
+// 分類環用色：teal 領頭、冷暖交錯，刻意不含純紅/翠綠——那兩色是收支語意專用，
+// 出現在分類扇形會被誤讀成「這類是支出/收入」
+const PALETTE = ['#0d9488', '#f59e0b', '#3b82f6', '#ec4899', '#06b6d4', '#8b5cf6',
+  '#d97706', '#6366f1', '#db2777', '#a855f7', '#0ea5e9', '#64748b', '#14b8a6'];
 
 const $ = sel => document.querySelector(sel);
 
@@ -281,6 +283,19 @@ function currencyOf(accountName) {
 // ---------- 信用卡帳單週期（config.cards：Sheet 設定分頁 Z:AC）----------
 
 const cardOf = name => ((config && config.cards) || []).find(c => c.name === name);
+
+// 活存利率備忘（config.savings：Sheet 設定分頁 AE:AI）——帳戶總覽純顯示，不提醒
+const savingsOf = name => ((config && config.savings) || []).find(s => s.name === name);
+function savingsLabel(name) {
+  const s = savingsOf(name);
+  if (!s) return '';
+  const parts = [];
+  if (s.rate) parts.push(esc(s.rate));
+  if (s.cap) parts.push('上限 ' + esc(s.cap));
+  if (s.until) parts.push('到 ' + esc(s.until));
+  if (s.note) parts.push(esc(s.note));
+  return parts.join(' · ');
+}
 
 // 每月幾號，超過當月天數就取月底（結帳日 31 在 2 月 = 2/28）
 function clampDay(month, day) {
@@ -1347,7 +1362,7 @@ function renderPieStats(all) {
     </div>
     ${rows.length === 0
       ? `<p class="loading">這段期間沒有${type}記錄</p>`
-      : `<div class="donut" style="background:conic-gradient(${segments.join(',')})"><span>${fmtShort(type === '收入' ? totalIncome : totalExpense)}</span></div>
+      : `<div class="donut" style="background:conic-gradient(${segments.join(',')})"><span>${fmtShort(type === '收入' ? totalIncome : totalExpense)}<small>${st.mode === 'month' ? `${Number(st.month.slice(5, 7))} 月` : `${st.year} 年`}</small></span></div>
          <div class="record-list">${rows.map(([name, g], i) => `
            <div class="record cat-row" data-cat="${esc(name)}">
              <div class="rec-main">
@@ -1692,6 +1707,7 @@ async function renderAccounts() {
             <span class="rec-cat">${withEmoji(b.name, 'account')}${b.currency !== 'TWD' ? `（${b.currency}）` : ''}</span>
             <span class="rec-amount ${b.balance < 0 ? 'neg' : 'pos'}">${fmtMoney(b.balance)}<span class="chev">›</span></span>
           </div>
+          ${savingsLabel(b.name) ? `<div class="acc-sub">${savingsLabel(b.name)}</div>` : ''}
         </div>`).join('')}
       </div>
       <p class="hint">總額中外幣依即期匯率折算為 TWD</p>`;
@@ -2077,7 +2093,7 @@ function renderCategorySheet(cat) {
     openSheet(`
       <h3>分類</h3>
       <div class="grid" id="sheet-cats">${cats.map(c =>
-        `<button data-cat="${esc(c)}" class="${c === state.category ? 'active' : ''}">${emojiFor(c)}<br>${esc(c)}</button>`).join('')}</div>`);
+        `<button data-cat="${esc(c)}" class="${c === state.category ? 'active' : ''}"><span class="ge">${emojiFor(c)}</span><br>${esc(c)}</button>`).join('')}</div>`);
     $('#sheet-cats').querySelectorAll('button').forEach(b =>
       b.addEventListener('click', () => renderCategorySheet(b.dataset.cat)));
     return;
@@ -2086,7 +2102,7 @@ function renderCategorySheet(cat) {
   openSheet(`
     <button class="cat-picked" id="cat-change">${emojiFor(cat)} ${esc(cat)}<span class="swap">更換 ›</span></button>
     <div class="grid" id="sheet-subs">${subsOf(state.type, cat).map(s =>
-      `<button data-sub="${esc(s)}" class="${cat === state.category && s === state.sub ? 'active' : ''}">${subEmojiFor(cat, s)}<br>${esc(s)}</button>`).join('')}</div>`);
+      `<button data-sub="${esc(s)}" class="${cat === state.category && s === state.sub ? 'active' : ''}"><span class="ge">${subEmojiFor(cat, s)}</span><br>${esc(s)}</button>`).join('')}</div>`);
   $('#cat-change').addEventListener('click', () => renderCategorySheet(null));
   $('#sheet-subs').querySelectorAll('button').forEach(b =>
     b.addEventListener('click', () => {

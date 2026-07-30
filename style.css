@@ -436,6 +436,7 @@ button:active { transform: scale(.92); }
 }
 
 .rec-cat { font-size: 15px; display: flex; align-items: center; gap: 4px; }
+.acc-sub { font-size: 12px; color: var(--muted); margin-top: 3px; padding-left: 2px; }
 .rec-amount { font-size: 17px; font-weight: 600; }
 .neg { color: var(--red); }
 .pos { color: var(--green); }
@@ -464,8 +465,10 @@ button:active { transform: scale(.92); }
 }
 
 /* 總覽卡 */
+/* 摘要卡＝本頁結論：一條 hairline 邊框，比純平列表卡多一點重量（不堆陰影） */
 .totals {
   background: var(--card);
+  border: 1px solid var(--line);
   border-radius: 12px;
   padding: 6px 16px;
   margin-bottom: 10px;
@@ -784,11 +787,19 @@ button:active { transform: scale(.92); }
   position: absolute;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   font-size: 20px;
   font-weight: 700;
   z-index: 1;
+}
+
+.donut span small {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-top: 1px;
 }
 
 .dot {
@@ -883,6 +894,9 @@ button:active { transform: scale(.92); }
   color: #fff;
   font-weight: 600;
 }
+
+/* 分類/子分類磚：emoji 放大當辨識錨點、名稱在下確認，掃視更快 */
+.grid .ge { font-size: 19px; line-height: 1.4; }
 
 .cat-picked {
   width: 100%;

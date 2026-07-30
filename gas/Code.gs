@@ -347,8 +347,13 @@ function getConfig() {
   const cards = cfg.getRange(2, 26, last - 1, 4).getValues()
     .filter(r => r[0] !== '' && Number(r[1]))
     .map(r => ({ name: r[0], closeDay: Number(r[1]), payDay: Number(r[2]) || Number(r[1]), payFrom: String(r[3] || '') }));
+  // 活存利率備忘 AE:AI（帳戶/利率/額度上限/到期日/備註），全自由文字純顯示；到期日若填成真日期就格式化
+  const fmtD = v => v instanceof Date ? Utilities.formatDate(v, TZ, 'yyyy-MM-dd') : String(v || '').trim();
+  const savings = cfg.getRange(2, 31, last - 1, 5).getValues()
+    .filter(r => r[0] !== '')
+    .map(r => ({ name: String(r[0]).trim(), rate: fmtD(r[1]), cap: fmtD(r[2]), until: fmtD(r[3]), note: fmtD(r[4]) }));
   return { accounts, categories, tags, rates, emoji: readMap(15), subEmoji: readMap(18), quick, cards,
-    holdings: getHoldings() };
+    holdings: getHoldings(), savings };
 }
 
 // 「持倉」分頁：股票/ETF 追蹤清單。app 端的現有股數 = 基準股數 +
@@ -412,6 +417,15 @@ function initQuick() {
 function initCards() {
   const cfg = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('設定');
   cfg.getRange(1, 26, 1, 4).setValues([['信用卡', '結帳日', '繳費日', '扣款帳戶']]).setFontWeight('bold');
+}
+
+// 在編輯器跑一次，建「設定」AE:AI 活存利率備忘的標題列；之後直接在分頁增刪列。
+// 帳戶=帳戶名（要和 A 欄完全一致）、利率/額度上限/到期日/備註皆自由文字（app 帳戶總覽純顯示，不提醒）。
+// 到期日整欄設純文字，避開美國時區偏移（填「2026/09」或真日期都能顯示）
+function initSavings() {
+  const cfg = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('設定');
+  cfg.getRange(1, 31, 1, 5).setValues([['帳戶', '利率', '額度上限', '到期日', '備註']]).setFontWeight('bold');
+  cfg.getRange(2, 34, cfg.getMaxRows() - 1, 1).setNumberFormat('@');
 }
 
 function getRecords(from, to) {
