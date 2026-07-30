@@ -432,6 +432,9 @@ async function fetchConfig() {
 // 明細改由持久入口回看（mb_recur_last + ⚙️ 設定卡那列），錯過 toast 不等於永久看不到
 function maybeShowRecurringNotice(notice) {
   if (!notice || !notice.items || !notice.items.length) return false;
+  // 後端 LAST_RECURRING 是「永久最後一份」，會一直回傳同一批；使用者清除過就別再塞回/提示，
+  // 直到出現新的一批（ts 不同）
+  if (localStorage.getItem('mb_recur_cleared') === String(notice.ts)) return false;
   localStorage.setItem('mb_recur_last', JSON.stringify(notice)); // 一律更新供回看
   if (localStorage.getItem('mb_recur_seen') === String(notice.ts)) return false;
   localStorage.setItem('mb_recur_seen', String(notice.ts));
@@ -468,7 +471,16 @@ function openRecurNoticeSheet() {
   openSheet(`
     <h3>🔁 週期自動記帳</h3>
     <p class="hint">這些是週期規則自動生成的記錄，已在明細中</p>
-    <div>${rows}</div>`);
+    <div>${rows}</div>
+    <div class="sheet-actions"><button id="recur-clear">清除這則提示（記錄仍保留）</button></div>`);
+
+  // 清除＝記下這批的 ts 擋住重生（後端會一直回同一批），並移除回看資料 → ⚙️ 那列消失。
+  // 記錄本身不動，只是收掉提示；下次有新一批仍會照跳
+  $('#recur-clear').addEventListener('click', () => {
+    localStorage.setItem('mb_recur_cleared', String(notice.ts));
+    localStorage.removeItem('mb_recur_last');
+    closeSheet();
+  });
 }
 
 // 已有整月快取（開過月曆/統計）就直接取子集，翻日不逐日打 API
