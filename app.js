@@ -284,9 +284,16 @@ function currencyOf(accountName) {
 
 const cardOf = name => ((config && config.cards) || []).find(c => c.name === name);
 
-// 活存利率備忘（config.savings：Sheet 設定分頁 AE:AI）——帳戶總覽純顯示，不提醒
+// 活存利率備忘（config.savings：Sheet 設定分頁 AE:AI）——純顯示，不提醒
 const savingsOf = name => ((config && config.savings) || []).find(s => s.name === name);
-function savingsLabel(name) {
+// 帳戶總覽列表：只顯示利率＋上限（如 2% 10萬），詳細留給帳戶明細頁
+function savingsBrief(name) {
+  const s = savingsOf(name);
+  if (!s) return '';
+  return [s.rate, s.cap].filter(Boolean).map(esc).join(' ');
+}
+// 帳戶明細頁：利率／上限／到期／備註全顯示
+function savingsDetail(name) {
   const s = savingsOf(name);
   if (!s) return '';
   const parts = [];
@@ -1707,7 +1714,7 @@ async function renderAccounts() {
             <span class="rec-cat">${withEmoji(b.name, 'account')}${b.currency !== 'TWD' ? `（${b.currency}）` : ''}</span>
             <span class="rec-amount ${b.balance < 0 ? 'neg' : 'pos'}">${fmtMoney(b.balance)}<span class="chev">›</span></span>
           </div>
-          ${savingsLabel(b.name) ? `<div class="acc-sub">${savingsLabel(b.name)}</div>` : ''}
+          ${savingsBrief(b.name) ? `<div class="acc-sub">${savingsBrief(b.name)}</div>` : ''}
         </div>`).join('')}
       </div>
       <p class="hint">總額中外幣依即期匯率折算為 TWD</p>`;
@@ -2013,6 +2020,7 @@ async function renderAccountDetail() {
         <div><span>期間收入</span><b class="pos">${fmtMoney(inflow)}</b></div>
         <div><span>期間支出</span><b class="neg">${fmtMoney(outflow)}</b></div>
       </div>
+      ${savingsDetail(av.name) ? `<p class="hint">${savingsDetail(av.name)}</p>` : ''}
       ${!isBill ? '' : paid
         ? `<p class="hint">✓ ${fmtMD(paid.date)} 已繳 ${fmtMoney(paid.amount)}（${esc(paid.from)}）</p>`
         : due > 0 && card.payFrom && end < today()
