@@ -35,6 +35,8 @@ const state = {
   lockedAccount: null,
   listDate: today(),
   accView: null,
+  accScroll: 0, // 進帳戶明細前記住總覽的捲動位置，返回時還原
+  restoreAccScroll: false,
   accTab: 'accounts', // 帳戶頁頂部 tab：accounts=帳戶總覽、holdings=持倉
   stats: {
     mode: 'month', // month / year / all（總覽：與期間無關的圖表，2026-07-19 取代很少用的自訂區間）
@@ -43,7 +45,7 @@ const state = {
     chart: 'expense',
     tag: null,
     expanded: null,
-    excluded: new Set(),   // '類型|分類'，session 內有效；作用於圓環/收支/月均/總覽支出趨勢（其餘趨勢圖不套，避免看不見的過濾）
+    excluded: new Set(),   // '類型|分類'，session 內有效；作用於圓環/收支/月均/總覽支出趨勢/年度月趨勢（都連 chips 顯示排除）；資產趨勢刻意不套（回推會虛高）
   },
 };
 
@@ -1219,7 +1221,7 @@ async function renderStats() {
       <button id="stats-prev">‹</button>
       <select id="stats-year-select" title="快速切換年份">${years.map(y =>
         `<option value="${y}" ${y === st.year ? 'selected' : ''}>${y} 年</option>`).join('')}</select>
-      <button id="stats-next">›</button>
+      <button id="stats-next"${st.year >= nowY ? ' style="visibility:hidden"' : ''}>›</button>
     </div>`;
   }
 
@@ -1335,8 +1337,11 @@ async function renderStats() {
     if (statsSnapshot() !== snap) return;
 
     // assetTrend 已在上面 return，這裡的 *Trend 只剩支出/收入/結餘月趨勢
-    if (st.chart.endsWith('Trend')) $('#stats-body').innerHTML = monthlyTrendHTML(records, st.chart.slice(0, -5));
-    else renderPieStats(records);
+    if (st.chart.endsWith('Trend')) {
+      $('#stats-body').innerHTML = excludedChipsHTML(st) + monthlyTrendHTML(records, st.chart.slice(0, -5));
+      $('#stats-body').querySelectorAll('.stats-excluded button').forEach(b =>
+        b.addEventListener('click', () => { st.excluded.delete(b.dataset.restore); renderStats(); }));
+    } else renderPieStats(records);
   } catch (err) {
     if (!handleAuthError(err)) $('#stats-body').innerHTML = `<p class="loading">載入失敗：${err.message}</p>`;
   }
@@ -1507,7 +1512,9 @@ const TREND_META = {
 
 function monthlyTrendHTML(records, kind) {
   const meta = TREND_META[kind];
-  const months = yearMonths(state.stats.year);
+  const st = state.stats;
+  if (st.excluded.size) records = records.filter(r => !st.excluded.has(`${r.type}|${r.category}`));
+  const months = yearMonths(st.year);
   if (!months.length) return '<p class="loading">還沒到這一年</p>';
   const sums = new Map(months.map(m => [m, 0]));
   records.forEach(r => {
@@ -1784,6 +1791,7 @@ async function renderAccounts() {
 
     $('#acc-body').querySelectorAll('.acc-row').forEach(el =>
       el.addEventListener('click', () => {
+        state.accScroll = window.scrollY || 0;
         state.accView = {
           name: el.dataset.name,
           mode: 'month',
@@ -1792,6 +1800,11 @@ async function renderAccounts() {
         };
         renderAccounts();
       }));
+
+    if (state.restoreAccScroll) {
+      state.restoreAccScroll = false;
+      window.scrollTo(0, state.accScroll);
+    }
   } catch (err) {
     if (!handleAuthError(err)) $('#acc-body').innerHTML = `<p class="loading">載入失敗：${err.message}</p>`;
   }
@@ -1992,7 +2005,7 @@ async function renderAccountDetail() {
     <div id="accd-body">${spinnerHTML}</div>
     <button id="acc-add" class="fab" title="用這個帳戶記一筆">✏️</button>`;
 
-  $('#acc-back').addEventListener('click', () => { state.accView = null; renderAccounts(); });
+  $('#acc-back').addEventListener('click', () => { state.accView = null; state.restoreAccScroll = true; renderAccounts(); });
   $('#view').querySelectorAll('[data-accmode]').forEach(b =>
     b.addEventListener('click', () => {
       const mode = b.dataset.accmode;
@@ -2466,7 +2479,7 @@ document.addEventListener('touchend', e => {
   } else if (state.view === 'stats' && state.stats.mode !== 'all') {
     const st = state.stats;
     if (st.mode === 'month') st.month = shiftMonth(st.month, dir);
-    else st.year += dir;
+    else st.year = Math.min(st.year + dir, Number(today().slice(0, 4))); // 不看未來年
     st.expanded = null;
     renderStats();
   } else if (state.view === 'accounts' && state.accView) {
@@ -2525,6 +2538,7 @@ $('#accounts-manage').addEventListener('click', () => {
 $('#config-reload').addEventListener('click', async () => {
   if (!token()) return;
   $('#token-screen').classList.add('hidden');
+  showBusy('重新整理中…'); // GAS 固定 ~4s，先給遮罩反饋免得像沒反應
   try {
     const shownNotice = await fetchConfig();
     clearAllCaches();
@@ -2533,6 +2547,8 @@ $('#config-reload').addEventListener('click', async () => {
     warmCurrentYear();
   } catch (err) {
     if (!handleAuthError(err)) toast(`更新失敗：${err.message}`, true);
+  } finally {
+    hideBusy();
   }
 });
 
