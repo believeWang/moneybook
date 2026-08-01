@@ -776,6 +776,8 @@ function renderAdd() {
           state.from = state.from || (vis[0] ? vis[0].name : '');
           state.to = state.to || (vis[1] ? vis[1].name : '');
         }
+      } else if (state.lockedAccount) {
+        state.account = state.lockedAccount;
       }
       saveEntryDefaults();
       renderAdd();
