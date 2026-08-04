@@ -39,6 +39,7 @@ const state = {
   restoreAccScroll: false,
   accTab: 'accounts', // 帳戶頁頂部 tab：accounts=帳戶總覽、holdings=持倉
   accFilter: 'all',   // 帳戶總覽篩選桶：all / cash / card / invest（見 accKind）
+  holdFilter: '',     // 持倉 tab 的代號/名稱/桶別快速過濾
   stats: {
     mode: 'month', // month / year / all（總覽：與期間無關的圖表，2026-07-19 取代很少用的自訂區間）
     month: today().slice(0, 7),
@@ -1960,11 +1961,31 @@ async function fillHoldings() {
 
   const dup = t => holdings.filter(h => h.ticker === t).length > 1;
   const totalVal = holdings.reduce((s, h, i) => s + (holdingValue(h, shares[i]) || 0), 0);
+
+  // 標的一多，記股息要捲很久才找得到那列——超過 6 檔才給過濾框（少的時候一眼看完，多一個框只是噪音）
+  const canFilter = holdings.length > 6;
   box.innerHTML = `
     ${totalVal ? `<div class="totals">
       <div><span>持倉市值</span><b class="pos">${fmtMoney(totalVal)}</b></div>
     </div>` : ''}
-    <div class="record-list">${holdings.map((h, i) => {
+    ${canFilter ? `<input id="hold-filter" type="search" placeholder="代號 / 名稱 / 桶別"
+      value="${esc(state.holdFilter)}" enterkeyhint="done"
+      autocapitalize="off" autocorrect="off" spellcheck="false">` : ''}
+    <div id="hold-list" class="record-list"></div>
+    <p class="hint">市值＝現價 × 股數，外幣依即期匯率折算 TWD；無報價的標的只顯示股數（持倉分頁「現價」欄手動填數字即可）</p>`;
+
+  // 只重畫列表不重畫輸入框，否則每打一個字 input 就被換掉、iOS 鍵盤會收起來
+  const drawRows = () => {
+    const list = $('#hold-list');
+    if (!list) return;
+    const q = canFilter ? state.holdFilter.trim().toLowerCase() : '';
+    const rows = holdings.map((h, i) => ({ h, i }))
+      .filter(({ h }) => !q || [h.ticker, h.name, h.bucket].some(f => String(f || '').toLowerCase().includes(q)));
+    if (!rows.length) {
+      list.innerHTML = '<p class="loading">沒有符合的標的</p>';
+      return;
+    }
+    list.innerHTML = rows.map(({ h, i }) => {
       const sub = [h.bucket, dup(h.ticker) ? h.account : ''].filter(Boolean).join('・');
       const val = holdingValue(h, shares[i]);
       return `
@@ -1979,12 +2000,17 @@ async function fillHoldings() {
         </div>
         ${sub ? `<div class="rec-sub"><span>${esc(sub)}</span></div>` : ''}
       </div>`;
-    }).join('')}
-    </div>
-    <p class="hint">市值＝現價 × 股數，外幣依即期匯率折算 TWD；無報價的標的只顯示股數（持倉分頁「現價」欄手動填數字即可）</p>`;
+    }).join('');
+    list.querySelectorAll('.div-btn').forEach(b =>
+      b.addEventListener('click', () => startDividend(holdings[Number(b.dataset.hi)])));
+  };
+  drawRows();
 
-  box.querySelectorAll('.div-btn').forEach(b =>
-    b.addEventListener('click', () => startDividend(holdings[Number(b.dataset.hi)])));
+  const filter = $('#hold-filter');
+  if (filter) {
+    filter.addEventListener('input', () => { state.holdFilter = filter.value; drawRows(); });
+    filter.addEventListener('keydown', e => { if (e.key === 'Enter') filter.blur(); });
+  }
 }
 
 // 持倉列 💰：帶入股息的新增畫面（收入、上次記股息的分類、該標的上次用的帳戶、備註「標的 股息」），
@@ -2367,7 +2393,7 @@ function openHelpSheet() {
       <h4>📈 投資</h4>
       <ul>
         <li><b>買賣輸入</b>：轉帳（交割戶↔券商）時用「持倉」列選標的＋股數，買/賣由轉帳方向自動判斷。等同在備註寫「0050 1000股」（賣出寫負數），手打也有效</li>
-        <li><b>股息 💰</b>：帳戶頁持倉 tab 每列的 💰，帶入收入與備註；第一次自選分類/入帳帳戶，之後每檔標的都記住</li>
+        <li><b>股息 💰</b>：帳戶頁持倉 tab 每列的 💰，帶入收入與備註；第一次自選分類/入帳帳戶，之後每檔標的都記住。標的多的時候用上方的框打代號/名稱/桶別快速篩出那列</li>
         <li><b>股數</b> = 持倉分頁的基準股數＋之後的備註累計；新標的先在 Sheet 持倉分頁加一列再「🔄 更新設定」</li>
         <li><b>資產配置</b>：統計「總覽」的市值快照；現價抓不到的標的在持倉分頁 G 欄手動填數字</li>
       </ul>
