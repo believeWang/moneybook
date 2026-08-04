@@ -1110,7 +1110,7 @@ button:active { transform: scale(.92); }
 .help li b { color: var(--text); font-weight: 600; }
 
 /* 搜尋 */
-#search-input, #hold-filter {
+#search-input, #hold-filter, #acc-filter {
   width: 100%;
   padding: 10px 12px;
   font-size: 16px;

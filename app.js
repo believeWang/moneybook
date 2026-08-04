@@ -2277,14 +2277,47 @@ function renderCategorySheet(cat) {
     }));
 }
 
+// 帳戶多的時候平面清單要掃很久（一次要記好幾筆、每筆換不同帳戶的場景最痛）。
+// 每次開啟都從空的開始——這是即開即用的選擇器，殘留的過濾字串只會讓人以為帳戶不見了
 function openAccountSheet(onPick) {
+  const accounts = visibleAccounts();
+  const canFilter = accounts.length > 12;
+  // tall：固定高度讓輸入框停在畫面上緣附近，iOS 鍵盤彈出才不會蓋住它（同搜尋記錄）
   openSheet(`
     <h3>帳戶</h3>
-    <div class="account-list">${visibleAccounts().map(a =>
-      `<button data-name="${esc(a.name)}">${withEmoji(a.name, 'account')}${a.currency !== 'TWD' ? `（${a.currency}）` : ''}</button>`).join('')}
-    </div>`);
-  $('#sheet-content').querySelectorAll('[data-name]').forEach(b =>
-    b.addEventListener('click', () => { closeSheet(); onPick(b.dataset.name); }));
+    ${canFilter ? `<input id="acc-filter" type="search" placeholder="搜尋帳戶名" enterkeyhint="done"
+      autocapitalize="off" autocorrect="off" spellcheck="false">` : ''}
+    <div id="acc-list" class="account-list"></div>`, canFilter ? 'tall' : '');
+
+  const pick = name => { closeSheet(); onPick(name); };
+
+  // 只重畫清單不重畫輸入框，否則每打一個字 input 就被換掉、iOS 鍵盤會收起來
+  const drawRows = () => {
+    const list = $('#acc-list');
+    if (!list) return;
+    const q = (canFilter ? $('#acc-filter').value : '').trim().toLowerCase();
+    const hits = accounts.filter(a => !q || a.name.toLowerCase().includes(q));
+    list.innerHTML = hits.length
+      ? hits.map(a =>
+          `<button data-name="${esc(a.name)}">${withEmoji(a.name, 'account')}${a.currency !== 'TWD' ? `（${a.currency}）` : ''}</button>`).join('')
+      : '<p class="loading">沒有符合的帳戶</p>';
+    list.querySelectorAll('[data-name]').forEach(b =>
+      b.addEventListener('click', () => pick(b.dataset.name)));
+    return hits;
+  };
+  drawRows();
+
+  const filter = $('#acc-filter');
+  if (filter) {
+    filter.addEventListener('input', drawRows);
+    // 只剩一個候選時 Enter 直接選它，多於一個不動作（不猜）
+    filter.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      const q = filter.value.trim().toLowerCase();
+      const hits = accounts.filter(a => a.name.toLowerCase().includes(q));
+      if (q && hits.length === 1) pick(hits[0].name); else filter.blur();
+    });
+  }
 }
 
 // 全文搜尋：備註/分類/子分類/帳戶/標籤模糊比對、純數字另比對金額完全相等；點結果開明細（可編輯/刪除）
