@@ -34,7 +34,7 @@ function initSheets() {
 
   const cfg = ss.getSheetByName('設定') || ss.insertSheet('設定');
   cfg.clear();
-  cfg.getRange(1, 1, 1, 3).setValues([['帳戶','顯示','幣別']]);
+  cfg.getRange(1, 1, 1, 4).setValues([['帳戶','顯示','幣別','帳戶類型']]);
   cfg.getRange(2, 1, ACCOUNTS.length, 3).setValues(ACCOUNTS);
 
   const catRows = [];
@@ -329,9 +329,10 @@ function doGet(e) {
 function getConfig() {
   const cfg = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('設定');
   const last = cfg.getLastRow();
-  const accounts = cfg.getRange(2, 1, last - 1, 3).getValues()
+  // D 欄「帳戶類型」是選填的覆寫（現金/信用卡/投資），空白時前端自動推導
+  const accounts = cfg.getRange(2, 1, last - 1, 4).getValues()
     .filter(r => r[0] !== '')
-    .map(r => ({ name: r[0], show: r[1] == 1, currency: r[2] || 'TWD' }));
+    .map(r => ({ name: r[0], show: r[1] == 1, currency: r[2] || 'TWD', kind: String(r[3] || '').trim() }));
   const categories = cfg.getRange(2, 5, last - 1, 4).getValues()
     .filter(r => r[0] !== '')
     .map(r => ({ type: r[0], category: r[1], sub: r[2], defaultAccount: r[3] }));
@@ -630,7 +631,7 @@ function importOldData() {
 // 以匯入資料重建「設定」帳戶與分類：2026 年起用過的帳戶才顯示，其餘隱藏；順序都照使用頻率
 function rebuildConfig(acctStat, catCount) {
   const cfg = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('設定');
-  cfg.getRange('A2:C').clearContent();
+  cfg.getRange('A2:D').clearContent(); // D=帳戶類型：帳戶列重排後舊值會對到別人，一併清掉
   cfg.getRange('E2:H').clearContent();
 
   const accRows = Object.keys(acctStat)
@@ -686,7 +687,7 @@ function reorderAccountsByUsage() {
 
   const cfg = ss.getSheetByName('設定');
   const last = cfg.getLastRow();
-  const rows = cfg.getRange(2, 1, last - 1, 3).getValues().filter(r => r[0] !== '');
+  const rows = cfg.getRange(2, 1, last - 1, 4).getValues().filter(r => r[0] !== '');
   // 顯示/隱藏分開分組：隱藏的同銀行帳戶留在後段，不被顯示中的同名組拉上來
   const groupKey = r => (r[1] == 1 ? 'v' : 'h') + String(r[0]).slice(0, 2);
   const groupTop = {};
@@ -701,8 +702,8 @@ function reorderAccountsByUsage() {
     if (ka !== kb) return (groupTop[kb] - groupTop[ka]) || (ka < kb ? -1 : 1);
     return (freq[b[0]] || 0) - (freq[a[0]] || 0);
   });
-  cfg.getRange(2, 1, last - 1, 3).clearContent();
-  cfg.getRange(2, 1, rows.length, 3).setValues(rows);
+  cfg.getRange(2, 1, last - 1, 4).clearContent();
+  cfg.getRange(2, 1, rows.length, 4).setValues(rows);
   Logger.log(rows.map(r => (r[1] == 1 ? '' : '（隱藏）') + r[0] + '：近一年 ' + (freq[r[0]] || 0) + ' 筆').join('\n'));
 }
 
@@ -712,8 +713,8 @@ function reorderAccountsByUsage() {
 function reorderAccounts() {
   const cfg = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('設定');
   const last = cfg.getLastRow();
-  const rows = cfg.getRange(2, 1, last - 1, 3).getValues().filter(r => r[0] !== '');
+  const rows = cfg.getRange(2, 1, last - 1, 4).getValues().filter(r => r[0] !== '');
   rows.sort(byAccountOrder);
-  cfg.getRange(2, 1, last - 1, 3).clearContent();
-  cfg.getRange(2, 1, rows.length, 3).setValues(rows);
+  cfg.getRange(2, 1, last - 1, 4).clearContent();
+  cfg.getRange(2, 1, rows.length, 4).setValues(rows);
 }

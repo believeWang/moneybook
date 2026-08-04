@@ -38,6 +38,7 @@ const state = {
   accScroll: 0, // 進帳戶明細前記住總覽的捲動位置，返回時還原
   restoreAccScroll: false,
   accTab: 'accounts', // 帳戶頁頂部 tab：accounts=帳戶總覽、holdings=持倉
+  accFilter: 'all',   // 帳戶總覽篩選桶：all / cash / card / invest（見 accKind）
   stats: {
     mode: 'month', // month / year / all（總覽：與期間無關的圖表，2026-07-19 取代很少用的自訂區間）
     month: today().slice(0, 7),
@@ -82,6 +83,22 @@ function clearAllCaches() {
   allRecords = null;
   recordCache.clear();
   balancesCache = null;
+  persistCaches();
+}
+
+// ⚙️「更新設定」用：帳戶順序/顯示/幣別是隨 balances 一起回來的，但餘額數字是從記錄算的、
+// 改設定不會動到它——所以拿新 config 的帳戶清單就地重排既有快取（名稱當 key），
+// 省掉一次 4 秒的 balances 重撈。新帳戶在舊快取裡沒有 → 餘額 0（沒記錄本來就是 0；
+// 若是直接在 Sheet 補過記錄，要走「重新載入全部資料」）
+function syncBalancesToConfig() {
+  if (!balancesCache || !config) return;
+  const old = new Map(balancesCache.map(b => [b.name, b.balance]));
+  balancesCache = config.accounts.map(a => ({
+    name: a.name,
+    show: a.show,
+    currency: a.currency,
+    balance: old.get(a.name) || 0,
+  }));
   persistCaches();
 }
 
@@ -285,6 +302,20 @@ function currencyOf(accountName) {
 // ---------- 信用卡帳單週期（config.cards：Sheet 設定分頁 Z:AC）----------
 
 const cardOf = name => ((config && config.cards) || []).find(c => c.name === name);
+
+// 帳戶分類：預設從既有設定推導——投資=持倉分頁帳戶欄出現過的券商、信用卡=卡片設定或名稱
+// 含「信用卡」、其餘=現金。推導看不出來的（沒有持倉列的投資性質帳戶）在設定分頁 D 欄填類型覆寫，
+// 空白就照推導走——所以新開帳戶不填也不會分錯桶，只是可能分得不夠細
+const ACC_KINDS = [['cash', '現金'], ['card', '信用卡'], ['invest', '投資']];
+
+function accKind(name) {
+  const acct = ((config && config.accounts) || []).find(a => a.name === name);
+  const override = acct && ACC_KINDS.find(([, label]) => label === acct.kind);
+  if (override) return override[0];
+  if (((config && config.holdings) || []).some(h => h.account === name)) return 'invest';
+  if (cardOf(name) || name.includes('信用卡')) return 'card';
+  return 'cash';
+}
 
 // 活存利率備忘（config.savings：Sheet 設定分頁 AE:AI）——純顯示，不提醒
 const savingsOf = name => ((config && config.savings) || []).find(s => s.name === name);
@@ -1767,18 +1798,32 @@ async function renderAccounts() {
     const balances = await fetchBalances();
     if (state.view !== 'accounts' || state.accView) return;
 
-    const assets = balances.filter(b => b.balance > 0).reduce((s, b) => s + b.balance * rateOf(b.currency), 0);
-    const debts = balances.filter(b => b.balance < 0).reduce((s, b) => s + b.balance * rateOf(b.currency), 0);
+    const sum = arr => arr.reduce((s, b) => s + b.balance * rateOf(b.currency), 0);
+    const assets = sum(balances.filter(b => b.balance > 0));
+    const debts = sum(balances.filter(b => b.balance < 0));
 
     const listed = balances.filter(b => b.show || b.balance !== 0);
 
+    // 只有實際存在兩種以上帳戶時才出篩選列（沒設卡片/持倉的話全都是現金，那列沒意義）
+    const kinds = ACC_KINDS.filter(([k]) => listed.some(b => accKind(b.name) === k));
+    const filter = kinds.some(([k]) => k === state.accFilter) ? state.accFilter : 'all';
+    const shown = filter === 'all' ? listed : listed.filter(b => accKind(b.name) === filter);
+    const label = (kinds.find(([k]) => k === filter) || [, ''])[1];
+    const subtotal = sum(shown);
+
     $('#acc-body').innerHTML = `
+      ${kinds.length > 1
+        ? `<div class="seg">${[['all', '全部'], ...kinds].map(([k, l]) =>
+            `<button data-accfilter="${k}" class="${filter === k ? 'active' : ''}">${l}</button>`).join('')}</div>`
+        : ''}
       <div class="totals">
-        <div><span>總資產</span><b class="pos">${fmtMoney(assets)}</b></div>
-        <div><span>總負債</span><b class="neg">${fmtMoney(debts)}</b></div>
-        <div><span>結餘</span><b>${fmtMoney(assets + debts)}</b></div>
+        ${filter === 'all'
+          ? `<div><span>總資產</span><b class="pos">${fmtMoney(assets)}</b></div>
+             <div><span>總負債</span><b class="neg">${fmtMoney(debts)}</b></div>
+             <div><span>結餘</span><b>${fmtMoney(assets + debts)}</b></div>`
+          : `<div><span>${label}小計</span><b class="${subtotal < 0 ? 'neg' : 'pos'}">${fmtMoney(subtotal)}</b></div>`}
       </div>
-      <div class="record-list">${listed.map(b => `
+      <div class="record-list">${shown.map(b => `
         <div class="record acc-row" data-name="${esc(b.name)}">
           <div class="rec-main">
             <span class="rec-cat">${withEmoji(b.name, 'account')}${b.currency !== 'TWD' ? `（${b.currency}）` : ''}</span>
@@ -1788,6 +1833,13 @@ async function renderAccounts() {
         </div>`).join('')}
       </div>
       <p class="hint">總額中外幣依即期匯率折算為 TWD</p>`;
+
+    $('#acc-body').querySelectorAll('[data-accfilter]').forEach(b =>
+      b.addEventListener('click', () => {
+        if (state.accFilter === b.dataset.accfilter) return;
+        state.accFilter = b.dataset.accfilter;
+        renderAccounts();
+      }));
 
     $('#acc-body').querySelectorAll('.acc-row').forEach(el =>
       el.addEventListener('click', () => {
@@ -2316,7 +2368,7 @@ function openHelpSheet() {
       <ul>
         <li><b>買賣輸入</b>：轉帳（交割戶↔券商）時用「持倉」列選標的＋股數，買/賣由轉帳方向自動判斷。等同在備註寫「0050 1000股」（賣出寫負數），手打也有效</li>
         <li><b>股息 💰</b>：帳戶頁持倉 tab 每列的 💰，帶入收入與備註；第一次自選分類/入帳帳戶，之後每檔標的都記住</li>
-        <li><b>股數</b> = 持倉分頁的基準股數＋之後的備註累計；新標的先在 Sheet 持倉分頁加一列再「重新整理資料」</li>
+        <li><b>股數</b> = 持倉分頁的基準股數＋之後的備註累計；新標的先在 Sheet 持倉分頁加一列再「🔄 更新設定」</li>
         <li><b>資產配置</b>：統計「總覽」的市值快照；現價抓不到的標的在持倉分頁 G 欄手動填數字</li>
       </ul>
       <h4>💳 信用卡</h4>
@@ -2345,7 +2397,8 @@ function openHelpSheet() {
       <h4>⚙️ 其他</h4>
       <ul>
         <li>🏦 管理帳戶：新增帳戶、切換顯示/隱藏（改名與排序仍到 Sheet）</li>
-        <li>直接改 Sheet（帳戶、分類、emoji、chips、持倉、卡片…）後，要按「重新整理資料」才會生效</li>
+        <li>帳戶總覽的「全部/現金/信用卡/投資」列：切到現金只看能動用的錢＋小計。分桶自動判斷——券商＝持倉分頁帳戶欄、卡＝卡片設定或名稱含「信用卡」；分錯的在 Sheet 設定分頁 D 欄填「現金／信用卡／投資」覆寫，空白＝自動判斷</li>
+        <li>直接改 Sheet（帳戶、分類、emoji、chips、持倉、卡片…）後，要按「🔄 更新設定」才會生效；只有改到「記錄」分頁才需要「♻️ 重新載入全部資料」</li>
         <li>🙈 遮蔽金額：demo 給別人看時用，只遮數字、其他照常</li>
         <li>跨幣別轉帳會多出「入帳金額」欄，兩邊金額都自己填</li>
       </ul>
@@ -2535,15 +2588,36 @@ $('#accounts-manage').addEventListener('click', () => {
   $('#token-screen').classList.add('hidden');
   openAccountsSheet();
 });
+// 日常路徑：只重抓「設定」（帳戶/分類/emoji/chips/持倉/卡片…），記錄與餘額快取原封不動——
+// 改設定不會改到帳務數字，沒必要讓之後每次翻月都再付 4 秒
 $('#config-reload').addEventListener('click', async () => {
   if (!token()) return;
   $('#token-screen').classList.add('hidden');
-  showBusy('重新整理中…'); // GAS 固定 ~4s，先給遮罩反饋免得像沒反應
+  showBusy('更新設定中…'); // GAS 固定 ~4s，先給遮罩反饋免得像沒反應
+  try {
+    const shownNotice = await fetchConfig();
+    syncBalancesToConfig();
+    validateDefaults(); // Sheet 上刪掉/改名的帳戶或分類可能還留在新增頁的狀態裡
+    render();
+    if (!shownNotice) toast('設定已更新'); // 別蓋掉剛跳的週期提示
+  } catch (err) {
+    if (!handleAuthError(err)) toast(`更新失敗：${err.message}`, true);
+  } finally {
+    hideBusy();
+  }
+});
+
+// 罕見路徑：直接在 Sheet 改過「記錄」分頁時才需要——連記錄/餘額/全史快取一起丟掉重來
+$('#data-reload').addEventListener('click', async () => {
+  if (!token()) return;
+  $('#token-screen').classList.add('hidden');
+  showBusy('重新載入中…');
   try {
     const shownNotice = await fetchConfig();
     clearAllCaches();
+    validateDefaults();
     render();
-    if (!shownNotice) toast('已重新整理'); // 別蓋掉剛跳的週期提示
+    if (!shownNotice) toast('已重新載入');
     warmCurrentYear();
   } catch (err) {
     if (!handleAuthError(err)) toast(`更新失敗：${err.message}`, true);
