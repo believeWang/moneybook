@@ -48,6 +48,18 @@ body {
   padding: calc(env(safe-area-inset-top) + 8px) 0 calc(env(safe-area-inset-bottom) + 66px);
 }
 
+/* iOS 26 會把捲到狀態列底下的內容做模糊淡出；用實色蓋住狀態列區，模糊的就只是底色 */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top);
+  background: var(--bg);
+  z-index: 10;
+}
+
 button {
   font-family: inherit;
   touch-action: manipulation;

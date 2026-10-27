@@ -225,7 +225,7 @@ function fillQuick(q) {
   state.category = q.category;
   state.sub = q.sub;
   state.account = state.lockedAccount || defaultAccountFor(q.type, q.category, q.sub);
-  if (q.amount) state.expr = String(q.amount);
+  if (q.amount && !state.expr) state.expr = String(q.amount);
   saveEntryDefaults();
   renderAdd();
 }
@@ -2417,7 +2417,7 @@ function openHelpSheet() {
     <div class="help">
       <h4>📥 快速輸入</h4>
       <ul>
-        <li><b>常用 chips</b>：新增頁類型下方的圓鈕，點一下帶入分類/帳戶/金額；金額 0 的只帶分類、不清掉已輸入的金額。清單在 Sheet 設定分頁 U:X 欄</li>
+        <li><b>常用 chips</b>：新增頁類型下方的圓鈕，點一下帶入分類/帳戶/金額；已經輸入金額時只帶分類，不會蓋掉。清單在 Sheet 設定分頁 U:X 欄</li>
         <li><b>📋 捷徑帶入</b>：iPhone 捷徑（刷卡通知截圖 OCR）解析後放剪貼簿 → 開 app 點日期列的 📋 帶入，確認後按 OK 送出</li>
         <li><b>Siri 語音</b>：「嘿 Siri 記帳」→ 唸「分類 帳戶 金額」（如「吃飯 一二〇」），同樣經剪貼簿 → 📋 帶入</li>
         <li><b>補帳</b>：明細翻到哪一天，按「新增」或「＋記一筆」就帶那天的日期</li>
