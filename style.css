@@ -45,7 +45,8 @@ body {
   color: var(--text);
   max-width: 480px;
   margin: 0 auto;
-  padding: calc(env(safe-area-inset-top) + 8px) 0 calc(env(safe-area-inset-bottom) + 66px);
+  /* iOS 26 狀態列下方約 30pt 有系統模糊淡出（沒捲動也有），第一列內容要落在模糊區外 */
+  padding: calc(env(safe-area-inset-top) + 36px) 0 calc(env(safe-area-inset-bottom) + 66px);
 }
 
 button {
