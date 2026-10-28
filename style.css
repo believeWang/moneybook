@@ -45,11 +45,11 @@ body {
   color: var(--text);
   max-width: 480px;
   margin: 0 auto;
-  /* 多出的 32px 是 iOS 26 頂部實色填充區（見 #edge-cover），內容從它下方開始才不會被蓋掉上緣 */
-  padding: calc(env(safe-area-inset-top) + 40px) 0 calc(env(safe-area-inset-bottom) + 66px);
+  /* iOS 26 頂部實色填充（見 #edge-cover）延伸到狀態列下方約 13pt，內容從它下方開始才不會被蓋掉上緣 */
+  padding: calc(env(safe-area-inset-top) + 20px) 0 calc(env(safe-area-inset-bottom) + 66px);
 }
 
-/* iOS 26 主畫面 app 會在狀態列下方再畫約 32～40pt 的模糊淡出；畫面頂端有「真實元素、fixed、滿版、單一實色、高於 10px」
+/* iOS 26 主畫面 app 會在狀態列下方再畫約 30～40pt 的模糊淡出；畫面頂端有「真實元素、fixed、滿版、單一實色、高於 10px」
    的色條時 WebKit 改用該色填滿同一區域、不畫模糊（同條件的 body::before 試過無效，所以用真實 div） */
 #edge-cover {
   position: fixed;
