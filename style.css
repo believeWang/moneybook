@@ -45,8 +45,20 @@ body {
   color: var(--text);
   max-width: 480px;
   margin: 0 auto;
-  /* iOS 26 狀態列下方約 30pt 有系統模糊淡出（沒捲動也有），第一列內容要落在模糊區外 */
-  padding: calc(env(safe-area-inset-top) + 36px) 0 calc(env(safe-area-inset-bottom) + 66px);
+  padding: calc(env(safe-area-inset-top) + 8px) 0 calc(env(safe-area-inset-bottom) + 66px);
+}
+
+/* iOS 26 主畫面 app 會在頂部畫約 40pt 的模糊淡出；畫面頂端有「真實元素、fixed、滿版、單一實色、高於 10px」
+   的色條時 WebKit 改用該色填狀態列、不畫模糊（同條件的 body::before 試過無效，所以用真實 div） */
+#edge-cover {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: max(env(safe-area-inset-top), 12px);
+  background: var(--bg);
+  pointer-events: none;
+  z-index: 10;
 }
 
 button {
